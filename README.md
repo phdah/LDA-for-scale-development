@@ -1,6 +1,8 @@
 # LDA-for-scale-development
 
-Master thesis project in statistics. Full paper available at: .....
+## Under construction
+
+Master thesis project in statistics. Full paper available at: ..... 
 
 1. Find latent topics from textual data, from which questionnair items are created. 
   - Input M*1 data. (M is number of open-ended answers)
