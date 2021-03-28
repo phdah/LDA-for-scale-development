@@ -10,7 +10,7 @@ from scipy import special
 # import pyreadstat
 
 # Import data
-wd = 'C:/Users/philip.sjoberg/Desktop/Master thesis/Data/'
+wd = 'C:/Users/name/Desktop/Master thesis/Data/'
 file = 'Data_validation_test.xlsx'
 
 # Read data
@@ -53,7 +53,7 @@ def pca(df, missing):
     pca_explained_variance = pca_eigen_values[pca_sorted_components]
     pca_explained_variance_ratio = pca_explained_variance / pca_eigen_values.sum()
 
-    # Keep all items with |loading| > 0.4 in component one
+    # Keep all items with loading > 0.4 in component one
     print('\nEigenvalues:\n',
           np.row_stack((pca_sorted_components, pca_explained_variance, pca_explained_variance_ratio)))
     print('\nEigenvectors:\n', np.row_stack((pca_sorted_components, pca_projection_matrix)))
