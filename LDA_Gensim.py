@@ -30,7 +30,7 @@ import itertools
 # %matplotlib inline
 
 
-wd = 'C:/Users/philip.sjoberg/Desktop/Korning/04 Python Scripts/LDA phyton 2.0/'
+wd = 'C:/Users/name/Desktop/Korning/04 Python Scripts/LDA phyton 2.0/'
 
 text_RawFile = 'All_komments.xlsx'  # LDA_Test
 
@@ -39,7 +39,9 @@ topic_max = 10
 chunk = 100
 
 df_org = pd.read_excel(wd + text_RawFile)
-df_org = df_org.sample(700, random_state=1).reset_index(drop=True)
+
+# For testing convergence with increasning number of observations
+#df_org = df_org.sample(700, random_state=1).reset_index(drop=True)
 
 df = df_org.copy()
 
