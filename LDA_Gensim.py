@@ -32,7 +32,7 @@ import itertools
 
 wd = 'C:/Users/name/Desktop/Korning/04 Python Scripts/LDA phyton 2.0/'
 
-text_RawFile = 'All_komments.xlsx'  # LDA_Test
+text_RawFile = 'All_komments.xlsx'
 
 topic_min = 2
 topic_max = 10
