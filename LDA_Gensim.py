@@ -1,12 +1,10 @@
+# Packages
 import pandas as pd
 import numpy as np
-#import math
-#import re
 import string
 
 import spacy
 
-# python -m spacy download en_core_web_sm
 nlp = spacy.load('en_core_web_sm', disable=['parser', 'ner'])
 
 # Gensim pipeline
@@ -18,31 +16,24 @@ from gensim.models.coherencemodel import CoherenceModel
 from nltk.corpus import stopwords
 stop_words = stopwords.words('english')
 
-# libraries for visualization
-#import pyLDAvis
-#import pyLDAvis.gensim
-#from IPython.display import display
-
 import matplotlib.pyplot as plt
-#import seaborn as sns
 import itertools
 
-# %matplotlib inline
 
+# Working directory and file
+wd = 'C:/Users/'
 
-wd = 'C:/Users/name/Desktop/Korning/04 Python Scripts/LDA phyton 2.0/'
+text_RawFile = 'file.xlsx' 
 
-text_RawFile = 'All_komments.xlsx'
-
+# B set for testing coherence
 topic_min = 2
 topic_max = 10
 chunk = 100
 
+# Load data
 df_org = pd.read_excel(wd + text_RawFile)
 
-# For testing convergence with increasning number of observations
-#df_org = df_org.sample(700, random_state=1).reset_index(drop=True)
-
+# Copy data to save orignial text
 df = df_org.copy()
 
 print(df.head(2))
@@ -58,10 +49,9 @@ def clean_text(text):
     table = str.maketrans(delete_dict)
     # Apply the dictionaty to the text cell
     text1 = text.translate(table)
-    # print('cleaned:'+text1)
     # Tokenize the words
     textArr = text1.split()
-    # Join back tokenz in one string, removing the digits and words shorter than 3
+    # Join back tokenz in one string, removing the digits and words shorter than 1
     text2 = ' '.join([w for w in textArr if (not w.isdigit() and (not w.isdigit() and len(w) > 1))])
 
     # Return, with lower casing
@@ -78,8 +68,6 @@ df['Text'] = df['Text'].apply(clean_text)
 df['Num_words_text'] = df['Text'].apply(lambda x: len(str(x).split()))
 
 
-# print(df.head)
-
 # function to remove stopwords
 def remove_stopwords(text):
     # Split into tokenz
@@ -92,8 +80,6 @@ def remove_stopwords(text):
 # remove stopwords from the text
 df['Text'] = df['Text'].apply(remove_stopwords)
 
-
-# print(df.head)
 
 def lemmatization(texts, allowed_postags=['NOUN', 'ADJ']):
     # Remove stemming
@@ -124,7 +110,6 @@ doc_term_matrix = [dictionary.doc2bow(rev) for rev in tokenized_text]
 # Interoperate the matrix in words, with count of words
 id_words = [[(dictionary[id], count) for id, count in line] for line in doc_term_matrix]
 
-
 # Compute Coherence Score
 def compute_coherence_values(dictionary, corpus, texts, limit, start=2, step=3):
     """
@@ -144,12 +129,15 @@ def compute_coherence_values(dictionary, corpus, texts, limit, start=2, step=3):
     -------
     model_list : List of LDA topic models
     coherence_values : Coherence values corresponding to the LDA model with respective number of topics
+    corpus=corpus, num_topics=num_topics, id2word=dictionary,
+                                                random_state=100
     """
     coherence_values = []
     model_list = []
-    for num_topics in range(start, limit, step):
-        model = gensim.models.ldamodel.LdaModel(corpus=corpus, num_topics=num_topics, id2word=dictionary,
-                                                random_state=100)
+    for num_topics in range(start, limit+1, step):
+        model = gensim.models.ldamodel.LdaModel(corpus=corpus, id2word=dictionary, num_topics=num_topics, random_state=100,
+                 per_word_topics=True, chunksize=chunk, passes=500, iterations=10000, alpha='auto',
+                 eta='auto')
         model_list.append(model)
         coherencemodel = CoherenceModel(model=model, texts=texts, dictionary=dictionary, coherence='c_v')
         coherence_values.append(coherencemodel.get_coherence())
@@ -162,20 +150,8 @@ model_list, coherence_values = compute_coherence_values(dictionary=dictionary, c
                                                         texts=tokenized_text, start=topic_min, limit=topic_max, step=1)
 topic_best = model_list[np.argmax(coherence_values)].num_topics
 print('Finished:::')
-print('\nOptimal number of topics: ', topic_best)
 
-'''
-# Show graph
-limit = 50;
-start = 2;
-step = 1;
-x = range(start, limit, step)
-plt.plot(x, coherence_values)
-plt.xlabel("Num Topics")
-plt.ylabel("Coherence score")
-plt.legend(("coherence_values"), loc='best')
-plt.show()  # Print the coherence scores
-'''
+print('\nOptimal number of topics: ', topic_best)
 
 # Creating the object for LDA model using gensim library
 LDA = gensim.models.ldamodel.LdaModel
@@ -190,13 +166,17 @@ update_every:   Number of chunks to process prior to moving onto the M step of E
 # Gensim model
 https://radimrehurek.com/gensim/models/ldamodel.html
 '''
+
+#import logging
+#logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+
 print('\nRunning model...')
+# Iteratively updating prior
 best_model = LDA(corpus=doc_term_matrix, id2word=dictionary, num_topics=topic_best, random_state=100,
                  per_word_topics=True, chunksize=chunk, passes=500, iterations=10000, alpha='auto',
-                 eta='auto')  # , minimum_phi_value=0.2
+                 eta='auto')
 print('Model finished:::')
 
-best_model.show_topics()
 # A measure of how good the model is. lower the better.
 print('\nPerplexity best model: ', best_model.log_perplexity(doc_term_matrix, total_docs=len(tokenized_text)))
 
@@ -206,17 +186,17 @@ coherence_score_best = coherence_values_best.get_coherence()
 print('Coherence of best model: ' + str(round(coherence_score_best, 4)))
 
 # Extract table of topics keywords
-df_rho = pd.DataFrame(best_model.print_topics())
-df_rho.columns = ('Topic', 'Rho')
+df_phi = pd.DataFrame(best_model.print_topics())
+df_phi.columns = ('Topic', 'phi')
 
 # Clean the df
-s = df_rho['Rho'].apply(lambda x: x.replace('+', ''))
+s = df_phi['phi'].apply(lambda x: x.replace('+', ''))
 s = s.apply(lambda x: x.replace('"', ''))
 s = s.apply(lambda x: x.replace('*', ' '))
 s = s.str.split()
 s = s.apply(lambda x: pd.Series(list(x)))
 
-df_rho = pd.concat([df_rho['Topic'].reset_index(drop=True), s], axis=1)
+df_phi = pd.concat([df_phi['Topic'].reset_index(drop=True), s], axis=1)
 
 
 def format_topics_sentences(ldamodel=None, corpus=None, text_org=None, text=None):
@@ -259,7 +239,7 @@ frequency = np.asarray((unique, counts)).T
 print('\nTopic frequency: ')
 print(frequency.astype(int))
 
-# Automatic labeling of multinomial topic models
+# Automatic labeling of multinomial topic models (Not included in paper)
 df_bigram = df_topic_sents_keywords[['Dominant_Topic', 'Topic_keywords', 'Text']].sort_values(by='Dominant_Topic')
 
 Topic_keywords = [[topic.split(', ')] for topic in df_bigram['Topic_keywords'].unique()]
@@ -295,14 +275,24 @@ for topic in range(len(Topic_keywords)):
 Topic_frequency = pd.DataFrame(frequency[:,1].astype(int), columns=['Frequency'])
 
 Topic_lable_df = pd.DataFrame(Topic_lable, columns=('Topic', 'PMI Label'))
-df_rho = pd.concat([Topic_lable_df.reset_index(drop=True), Topic_frequency, df_rho.iloc[:,1:]], axis=1)
+df_phi = pd.concat([Topic_lable_df.reset_index(drop=True), Topic_frequency, df_phi.iloc[:,1:]], axis=1)
+
+# Beta matrix
+beta = pd.DataFrame(np.transpose(best_model.state.get_lambda()))
+dict_word = pd.DataFrame([dictionary.id2token[id] for id in range(len(dictionary))], columns=['Word'])
+df_beta = pd.concat([dict_word, beta/beta.sum(0)], axis=1)
+
 
 # Write to excel
-writer = pd.ExcelWriter(wd + 'LDA_Thesis_Output.xlsx', engine='xlsxwriter')
+writer = pd.ExcelWriter(wd + 'LDA_Thesis_Output_' + str(topic_best) + '.xlsx', engine='xlsxwriter')
 
 df_topic_sents_keywords.to_excel(writer, sheet_name='Topic_assign')
-df_rho.to_excel(writer, sheet_name='Word_prob')
+df_phi.to_excel(writer, sheet_name='Topic_Keywords')
+df_beta.to_excel(writer, sheet_name='Beta_matrix')
 
 writer.save()
 writer.close()
 print('Script finished:.')
+
+
+
