@@ -1,6 +1,6 @@
 # LDA-for-scale-development
 
-Master thesis project in statistics. Full paper available at: ..... 
+Master thesis project in statistics. Full paper available here in repo.
 
 1. LDA_Gensim.py find latent topics from textual data, from which questionnair items are created. Input M*1 data. (M is number of open-ended answers)
 
